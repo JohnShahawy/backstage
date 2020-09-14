@@ -273,27 +273,35 @@ async function testAppServe(pluginName: string, appDir: string) {
   const startApp = spawnPiped(['yarn', 'start'], {
     cwd: appDir,
   });
-  Browser.localhost('localhost', 3000);
 
   let successful = false;
-  try {
-    const browser = new Browser();
+  for (let attempts = 1; ; attempts++) {
+    Browser.localhost('localhost', 3000);
 
-    await waitForPageWithText(browser, '/', 'Backstage Service Catalog');
-    await waitForPageWithText(
-      browser,
-      `/${pluginName}`,
-      `Welcome to ${pluginName}!`,
-    );
+    try {
+      const browser = new Browser();
 
-    print('Both App and Plugin loaded correctly');
-    successful = true;
-  } catch (error) {
-    throw new Error(`App serve test failed, ${error}`);
-  } finally {
-    // Kill entire process group, otherwise we'll end up with hanging serve processes
-    killTree(startApp.pid);
+      await waitForPageWithText(browser, '/', 'Backstage Service Catalog');
+      await waitForPageWithText(
+        browser,
+        `/${pluginName}`,
+        `Welcome to ${pluginName}!`,
+      );
+
+      print('Both App and Plugin loaded correctly');
+      successful = true;
+      break;
+    } catch (error) {
+      if (attempts >= 5) {
+        throw new Error(`App serve test failed, ${error}`);
+      }
+      console.log(`App serve failed, trying again, ${error}`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
+
+  // Kill entire process group, otherwise we'll end up with hanging serve processes
+  killTree(startApp.pid);
 
   try {
     await waitForExit(startApp);
