@@ -95,7 +95,6 @@ export const makeConfigs = async (
         imageFiles({
           exclude: /\.icon\.svg$/,
           include: [
-            /\.css$/,
             /\.svg$/,
             /\.png$/,
             /\.gif$/,
